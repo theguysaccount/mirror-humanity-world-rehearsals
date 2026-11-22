@@ -1,0 +1,14 @@
+# Decisions
+
+1. **A new small tool, not a rebuild, and the original untouched.** The brief for this session overrides the prompt's "copy the app and work there": the original Next.js app, its database and its live deployment were only read, never copied or changed. The new tool lives in its own repo and brand ("Shift Rehearsal") so it can't be mistaken for the original.
+2. **Written from scratch, MIT-licensed.** No code was copied from the original app. The queueing model is standard textbook material implemented independently.
+3. **Staffing first (open question for Jack: "which wedge?", defaulted).** The evaluator's best version starts with staffing and queue decisions; a marketplace-launch rehearsal needs population data and behavioural models that haven't been validated. Staffing has exact theory to check against.
+4. **Agent-simulation engines, synthetic populations and LLM agents dropped (open question, defaulted).** None are needed for queues, and they bring licensing, data-rights and running-cost questions. No commercial license is needed for anything here.
+5. **Simulations, not forecasts, everywhere.** A banner over every result, a line in every page footer, the first line of every summary and CSV. The headline sentence starts "In this simulation". Copy never says "will".
+6. **Every assumption visible.** The ten assumptions behind a result are listed in plain words beside it and included in the downloaded summary; the examples are labelled illustrations, not measurements.
+7. **Paired days and seeded randomness.** Both plans run on the same simulated customers each day (common random numbers), so differences come from staffing. The seed comes from the scenario, so a shared link reproduces the exact numbers.
+8. **Ranges, not just averages.** Each metric shows the middle 80% of simulated days, plus how often the plan beat the baseline on the same day.
+9. **Checked against theory every week.** Tests compare the simulator with Erlang C (four cases), the M/G/1 formula for low and medium variability, Little's law, conservation of customers, monotonicity in staff and edge cases. The method page publishes this build's numbers. A simulated day starts empty, so busy cases wait slightly less than the long-run formula; tolerances allow 8%.
+10. **The predict-observe-score loop, kept small (open question: "which real observations?", defaulted).** The reality check lets an operator record what really happened and see the error, in their own browser. A shared, scored ledger across businesses needs accounts: it's the paid key.
+11. **Static site, no dependencies.** Same machine-run pattern as the other sites. 1,000 simulated days run in well under a second in the browser.
+12. **One setting for the address.** `SITE_URL` drives canonicals, links in summaries and IndexNow. Scenario links survive a domain move (GitHub redirects the old address with its query); reality checks are per address, so `MOVE_NOTICE_URL` warns first.

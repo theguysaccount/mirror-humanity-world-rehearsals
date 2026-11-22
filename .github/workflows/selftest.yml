@@ -1,0 +1,98 @@
+# Weekly: run the simulation regression tests (the model against Erlang C, Little's law and the
+# M/G/1 formula, plus edge cases), check every live page, use the live tool end to end, redeploy if
+# the live site is behind main, and keep the scheduled workflows from being disabled for inactivity.
+# A failure opens (or comments on) one issue labelled ops-alert, and GitHub emails the repository
+# owner; the next clean run closes it. The live site itself is never touched by a failure here.
+# Safe to re-run at any time; nothing depends on it firing at an exact hour.
+name: Weekly self-test
+
+on:
+  schedule:
+    - cron: "37 13 * * 5"            # Fridays 13:37 UTC
+    - cron: "29,59 * 22-24 11 *"     # TEMPORARY, 22-24 Nov 2026 only: proves the schedule trigger; remove after the first scheduled run
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+concurrency:
+  group: selftest
+  cancel-in-progress: false
+
+env:
+  SITE_URL: ${{ vars.SITE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
+  GOATCOUNTER_URL: ${{ vars.GOATCOUNTER_URL }}
+  STUDIES_URL: ${{ vars.STUDIES_URL }}
+  STUDIES_LABEL: ${{ vars.STUDIES_LABEL }}
+  MOVE_NOTICE_URL: ${{ vars.MOVE_NOTICE_URL }}   # optional: set a few weeks before a domain move (OPERATIONS.md, key 1)
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Simulation regression tests and build tests
+        run: node --test tests/*.test.mjs
+      - name: Build with the deploy's settings (to know which build should be live)
+        run: node scripts/build.mjs
+      - name: Every live page, the robots file, the key file, and the live build matches main
+        id: live
+        run: node scripts/check_live.mjs
+      - name: Use the live tool end to end (desktop, phone, dark mode)
+        if: always()
+        run: |
+          for attempt in 1 2; do
+            node scripts/e2e.mjs --live && exit 0
+            sleep 60
+          done
+          exit 1
+      - name: Redeploy when the live site is behind main
+        if: always() && steps.live.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          busy=$(gh run list --workflow pages.yml --limit 20 --json status --jq '[.[] | select(.status != "completed")] | length')
+          if [ "$busy" = "0" ]; then
+            gh workflow run pages.yml --ref main
+            echo "::warning::The live site was behind main; dispatched a fresh deploy."
+          else
+            echo "A deploy is already running; not dispatching another."
+          fi
+      - name: Open or update the ops-alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create ops-alert --color B42318 --description "Automated health check failed" 2>/dev/null || true
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          open=$(gh issue list --label ops-alert --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "Still failing: $run"
+          else
+            gh issue create --label ops-alert --title "Weekly self-test failed" --body "The weekly self-test failed: $run. OPERATIONS.md says what each check means. The next clean run closes this issue."
+          fi
+      - name: Close the ops-alert issue after a clean run
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for n in $(gh issue list --label ops-alert --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "The self-test passed again: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          done
+
+  keepalive:
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Keep scheduled workflows enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/keepalive.sh

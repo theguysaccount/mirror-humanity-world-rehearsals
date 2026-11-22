@@ -120,7 +120,7 @@ export function validate(s) {
   if (!s || typeof s !== "object") bad("That isn't a scenario.");
   const n = Array.isArray(s.arrivals) ? s.arrivals.length : 0;
   if (n < 1 || n > LIMITS.hours) bad(`A scenario has between 1 and ${LIMITS.hours} hours.`);
-  if (!Number.isInteger(s.open) || s.open < 0 || s.open + n > 48) bad("Pick an opening hour.");
+  if (!Number.isInteger(s.open) || s.open < 0 || s.open > 23) bad("Pick an opening hour.");
   for (const key of ["arrivals", "baseline", "plan"]) {
     if (!Array.isArray(s[key]) || s[key].length !== n) bad("Every hour needs arrivals and both staff numbers.");
   }

@@ -61,8 +61,8 @@ function drawForm(s) {
 <label>People give up after about (minutes) <input type="number" name="pat" min="0.5" max="240" step="0.5" value="${s.patienceMinutes ?? ""}" placeholder="nobody leaves"${s.patienceMinutes === null ? " disabled" : ""}></label>
 <label class="check"><input type="checkbox" name="nopat"${s.patienceMinutes === null ? " checked" : ""}> Nobody leaves the line</label>
 <label>Cost of one staff hour <input type="number" name="wage" min="0" max="10000" step="0.01" value="${s.wage}"></label>
-<label>Target: serve <input type="number" name="lvl" min="1" max="99" step="1" value="${s.level}"> % within</label>
-<label>(minutes) <input type="number" name="tgt" min="0" max="240" step="0.5" value="${s.targetMinutes}"></label>
+<label>Target: % served on time <input type="number" name="lvl" min="1" max="99" step="1" value="${s.level}"></label>
+<label>On time means within (minutes) <input type="number" name="tgt" min="0" max="240" step="0.5" value="${s.targetMinutes}"></label>
 <label>Simulated days <select name="runs">${[100, 200, 500, 1000].map((n) => `<option value="${n}"${n === s.runs ? " selected" : ""}>${n.toLocaleString("en-US")}</option>`).join("")}</select></label>
 </div>
 <p class="note">Every number above is an assumption you can change. The examples are illustrations, not measurements of any real business. Use your own: till receipts or ticket logs give customers per hour; a stopwatch gives service time.</p>`;
@@ -160,14 +160,16 @@ function headline() {
 // ---- running -------------------------------------------------------------------------------------
 
 function run({ fromForm = true } = {}) {
-  try {
-    if (fromForm) scenario = readForm();
-  } catch (e) {
-    $("#form-error").textContent = e.message;
-    $("#form-error").hidden = false;
-    return;
+  if (fromForm) {
+    try {
+      scenario = readForm();
+    } catch (e) {
+      $("#form-error").textContent = e.message;
+      $("#form-error").hidden = false;
+      return;
+    }
+    $("#form-error").hidden = true;
   }
-  $("#form-error").hidden = true;
   result = sim.rehearse(scenario);
   history.replaceState(null, "", `${location.pathname}?${sim.toQuery(scenario)}`);
   drawResults();

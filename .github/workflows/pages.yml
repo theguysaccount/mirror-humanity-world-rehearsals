@@ -1,0 +1,91 @@
+# Test, build and deploy Shift Rehearsal to GitHub Pages, check the live site, ping IndexNow.
+# Runs on every push to main that touches the site, and on demand (the weekly self-test
+# dispatches it when the live site is behind main).
+# Fails safe: any failed test stops the run before deploy, so the last good site stays live.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**", "LICENSE"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # The site's address. Set the repository variable SITE_URL to move to a custom domain (OPERATIONS.md, key 1).
+  SITE_URL: ${{ vars.SITE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
+  GOATCOUNTER_URL: ${{ vars.GOATCOUNTER_URL }}   # optional key: cookieless visit counts
+  STUDIES_URL: ${{ vars.STUDIES_URL }}           # optional key: paid saved and scored studies on other hosting
+  STUDIES_LABEL: ${{ vars.STUDIES_LABEL }}
+  MOVE_NOTICE_URL: ${{ vars.MOVE_NOTICE_URL }}   # optional: set a few weeks before a domain move (OPERATIONS.md, key 1)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Simulation regression tests and build tests
+        run: node --test tests/*.test.mjs
+      - name: Build
+        id: build
+        run: |
+          node scripts/build.mjs
+          echo "version=$(node -p 'require("./dist/build.json").version')" >> "$GITHUB_OUTPUT"
+      - name: Use the built tool in headless Chrome (desktop, phone, dark mode)
+        run: node scripts/e2e.mjs
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  after-deploy:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      EXPECT_VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Wait for the new build to be served, then check every page
+        run: |
+          for attempt in 1 2 3 4 5; do
+            node scripts/check_live.mjs && exit 0
+            sleep 60
+          done
+          exit 1
+      - name: Use the live tool end to end
+        run: |
+          for attempt in 1 2 3; do
+            node scripts/e2e.mjs --live && exit 0
+            sleep 60
+          done
+          exit 1
+      - name: Tell search engines (IndexNow)
+        run: node scripts/indexnow.mjs
