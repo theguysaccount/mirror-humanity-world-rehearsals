@@ -100,4 +100,4 @@ table.compare th[scope=row] { font-weight: 600; }
 .prose li { margin: 0.3em 0; }
 .staff-table td, .staff-table th { text-align: center; }
 .staff-table th[scope=row] { font-weight: 700; }
-@media (max-width: 560px) { body { font-size: 16px; } .panel { padding: 14px; } table.hours input { width: 4.6em; } table { font-size: 14px; } th, td { padding: 6px 6px; } }
+@media (max-width: 560px) { body { font-size: 16px; } .panel { padding: 14px; } table.hours input { width: 4.2em; padding: 6px 6px; } table { font-size: 14px; } th, td { padding: 6px 5px; } table.hours thead th { letter-spacing: 0.02em; } }

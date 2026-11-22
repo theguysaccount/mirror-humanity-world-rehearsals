@@ -50,7 +50,7 @@ function drawForm(s) {
 <label class="wide">Scenario name <input type="text" name="name" maxlength="80" value="${esc(s.name)}"></label>
 <label>Opens at <select name="open">${Array.from({ length: 24 }, (_, h) => `<option value="${h}"${h === s.open ? " selected" : ""}>${sim.hourLabel(h)}</option>`).join("")}</select></label>
 </div>
-<div class="table-wrap"><table class="hours"><thead><tr><th>Hour</th><th>Customers arriving</th><th>Staff now (baseline)</th><th>Staff in your plan</th><th class="num">Formula suggests</th></tr></thead>
+<div class="table-wrap"><table class="hours"><thead><tr><th>Hour</th><th>Customers</th><th>Staff now</th><th>Staff in plan</th><th class="num" title="Fewest staff the textbook formula says reach the target in a steady hour">Formula says</th></tr></thead>
 <tbody>${hourRows(s)}</tbody></table></div>
 <div class="btn-row"><button class="btn small quiet" type="button" data-action="add-hour"${s.arrivals.length >= sim.LIMITS.hours ? " disabled" : ""}>Add an hour</button>
 <button class="btn small quiet" type="button" data-action="remove-hour"${s.arrivals.length <= 1 ? " disabled" : ""}>Remove the last hour</button>
