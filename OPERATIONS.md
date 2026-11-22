@@ -15,7 +15,7 @@ Shift Rehearsal runs itself on GitHub: Pages hosts it, Actions runs every recurr
 
 The regression tests use fixed seeds, so they're exact and repeatable: a failure means the code changed, not bad luck. Every job is safe to re-run and nothing depends on a run firing at an exact time.
 
-**Temporary line to remove:** `selftest.yml` has a second cron, `29,59 * 22-24 11 *`, that only runs on 22–24 November 2026 to prove the schedule trigger. Remove it once a scheduled run has passed.
+**Schedule proven:** the first schedule-triggered self-test passed on 22 November 2026 ([run](https://github.com/theguysaccount/mirror-humanity-world-rehearsals/actions/runs/45048668270)): every live page, the live build version, the live run-through and the keep-alive. The temporary every-30-minutes schedule that proved it has been removed.
 
 ## What to watch
 
